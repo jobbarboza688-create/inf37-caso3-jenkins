@@ -1,0 +1,29 @@
+services:
+  init:
+    image: xyz-jenkins:caso3
+    build:
+      context: .
+      dockerfile: jenkins/Dockerfile
+    user: root
+    entrypoint: ["sh", "-c", "chown 1000:1000 /srv"]
+    volumes: ["releases:/srv"]
+  jenkins:
+    image: xyz-jenkins:caso3
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["jenkins_home:/var/jenkins_home", "releases:/srv"]
+    restart: unless-stopped
+  testserver:
+    image: xyz-jenkins:caso3
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    entrypoint: ["python3", "/opt/watch.py"]
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["releases:/srv:ro", "./scripts/watch.py:/opt/watch.py:ro"]
+    restart: unless-stopped
+volumes:
+  jenkins_home:
+  releases:

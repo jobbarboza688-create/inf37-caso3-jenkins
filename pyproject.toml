@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "xyz-caso3"
+version = "1.0.0"
+requires-python = ">=3.11"
+description = "Aplicacion de demostracion CI/CD INF-37"
+[tool.setuptools.packages.find]
+where = ["src"]
