@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 def run(command):
-    subprocess.run(command, check=True)  # nosec B603
+    subprocess.run(command, check=True, stdout=sys.stderr)  # nosec B603
 
 
 def switch(target):
