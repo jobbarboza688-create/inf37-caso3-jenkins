@@ -2,7 +2,8 @@
 import datetime
 import json
 import os
-import subprocess
+# Herramientas de validacion fijas, invocadas como listas sin shell.
+import subprocess  # nosec B404
 import sys
 from pathlib import Path
 

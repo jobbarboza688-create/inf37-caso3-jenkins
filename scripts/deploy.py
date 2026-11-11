@@ -2,7 +2,8 @@
 import hashlib
 import json
 import os
-import subprocess
+# Comandos internos en listas, sin shell; no se aceptan comandos del usuario.
+import subprocess  # nosec B404
 import sys
 import time
 import urllib.request

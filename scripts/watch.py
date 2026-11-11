@@ -1,7 +1,8 @@
 """Servidor independiente: reinicia el proceso al cambiar el enlace current."""
 import os
 import signal
-import subprocess
+# Arranque controlado del interprete de la release; nunca se usa shell=True.
+import subprocess  # nosec B404
 import time
 from pathlib import Path
 

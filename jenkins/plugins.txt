@@ -3,3 +3,4 @@ git
 github
 junit
 timestamper
+pipeline-graph-view
