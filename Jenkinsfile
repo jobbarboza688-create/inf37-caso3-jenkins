@@ -4,7 +4,14 @@ pipeline {
   triggers { pollSCM('H/5 * * * *') }
   stages {
     stage('GitHub') {
-      steps { deleteDir(); checkout scm; sh 'git rev-parse HEAD' }
+      steps {
+        deleteDir()
+        checkout scm
+        script {
+          env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+          echo "Commit validado: ${env.GIT_COMMIT}"
+        }
+      }
     }
     stage('Entorno y dependencias') {
       steps {
@@ -24,6 +31,7 @@ pipeline {
           def lint = sh(returnStatus: true, script: '.venv/bin/python -m flake8 src tests scripts --output-file=reports/flake8.txt')
           def tests = sh(returnStatus: true, script: '.venv/bin/python -m pytest -v --junitxml=reports/pytest.xml > reports/pytest.txt 2>&1')
           def security = sh(returnStatus: true, script: '.venv/bin/python -m bandit -r src scripts -f json -o reports/bandit.json > reports/bandit-console.txt 2>&1')
+          writeFile file: 'reports/quality-status.json', text: "{\"flake8\": ${lint}, \"pytest\": ${tests}, \"bandit\": ${security}}"
           if (lint != 0 || tests != 0 || security != 0) {
             error('Calidad rechazada: consultar reportes archivados')
           }
