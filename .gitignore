@@ -8,3 +8,4 @@ reports/
 .tmp/
 .pytest_cache/
 evidence/
+SHA256SUMS.txt

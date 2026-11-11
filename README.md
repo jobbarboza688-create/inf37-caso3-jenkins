@@ -11,11 +11,18 @@ de ejecución: API HTTP `/health`, respuesta JSON y función de suma validada. J
 obtiene GitHub, crea venv, instala herramientas, prueba, analiza, empaqueta wheel/sdist
 y publica automáticamente en un servidor de pruebas independiente.
 
-**No se ha ejecutado Jenkins, GitHub remoto ni el despliegue Docker.** El motor Docker
-no estaba disponible en la preparación. Los registros `reports/local-*.log` documentan
-únicamente ejecuciones locales reales; `validation.json` contiene códigos de salida y fecha
-UTC. No usar estos registros como capturas de Jenkins. Las evidencias externas siguen
-pendientes aunque el código esté preparado. Véase `EVIDENCIAS.md`.
+**El flujo se ejecutó realmente con Docker Desktop y Jenkins 2.580.2.** Los builds 3 y 4
+completaron GitHub, venv, dependencias, calidad, empaquetado y despliegue. El build 5
+provocó un fallo de arranque en una rama separada y restauró la release del build 4.
+El proyecto principal permanece en `main`; no usar `evidence-rollback` para ejecución normal.
+Las capturas reales y registros de Jenkins están en `evidence/`, incluidos en el ZIP
+de entrega. `reports/local-*.log` corresponde a validación Windows previa, no a Jenkins.
+No hay capturas simuladas. Véase `EVIDENCIAS.md` para la trazabilidad.
+
+Repositorio real: https://github.com/jobbarboza688-create/inf37-caso3-jenkins
+
+Jenkins local: http://localhost:8080/job/caso3-xyz/  
+Aplicación de pruebas: http://localhost:8000/health
 
 ## 1. Requisitos
 
@@ -27,7 +34,8 @@ No subir contraseñas, tokens, entornos virtuales ni `evidence/` con secretos al
 
 ## 2. Publicar el código en GitHub
 
-Crear un repositorio vacío en GitHub (sin README remoto). Desde esta carpeta ejecutar,
+El repositorio de esta entrega ya existe en la URL anterior. Para reproducir en otra cuenta,
+crear un repositorio vacío en GitHub (sin README remoto). Desde esta carpeta ejecutar,
 sustituyendo únicamente USUARIO y REPOSITORIO por los datos reales:
 
 ```sh
@@ -41,8 +49,8 @@ git push -u origin main
 Git requiere una identidad configurada por el usuario. Autenticarse con Git Credential
 Manager o SSH; nunca incluir un token en la URL o en Jenkinsfile. Para repositorio público,
 Jenkins clona sin credenciales. Para privado, registrar en Jenkins una credencial de lectura
-de GitHub y seleccionarla en SCM; no añadirla al código. No se ha creado un repositorio
-real desde este entorno.
+de GitHub y seleccionarla en SCM; no añadirla al código. En esta entrega Jenkins usa
+el repositorio público real indicado arriba y no necesita un token GitHub para clonar.
 
 ## 3. Instalar Jenkins en Docker (Parte 1, 50%)
 
@@ -70,7 +78,9 @@ docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 
 Abrir http://localhost:8080, desbloquear con la clave, crear un administrador propio,
-y completar el asistente usando los plugins ya instalados. No registrar la clave ni
+y completar el asistente usando los plugins ya instalados. En la ejecución documentada
+se conservó el administrador inicial y su contraseña generada, sin desactivar autenticación.
+No registrar la clave ni
 credenciales en las capturas de entrega. Jenkins conserva sus datos en `jenkins_home`.
 `init` finaliza con éxito al preparar propietario UID/GID 1000 de `releases`; es normal
 que no quede en ejecución.
@@ -84,6 +94,7 @@ La imagen instala Python, venv, Git y curl; `jenkins-plugin-cli` instala:
 | github | integración opcional con GitHub |
 | junit | publicación nativa del XML de pytest |
 | timestamper | marcas de tiempo de consola |
+| pipeline-graph-view | visualización de etapas y evidencia del flujo |
 
 **flake8, pytest y bandit son paquetes Python ejecutados por Jenkins; Python es el
 intérprete. No se presentan como tres plugins Jenkins independientes.** Se instalan en
@@ -162,7 +173,10 @@ Prueba de control: introducir temporalmente un test que falle, hacer commit/push
 construir. Debe fallar Calidad y pruebas, omitir despliegue y conservar el enlace de la
 versión anterior. Revertir el commit y repetir. Para probar rollback, en una rama de
 laboratorio provocar que la API no arranque pero mantener los tests aprobados, construir
-y comprobar restauración de `current` y salud previa. Estas pruebas externas están pendientes.
+y comprobar restauración de `current` y salud previa. La reversión fue comprobada con el
+build 5 de la rama `evidence-rollback`: terminó FAILURE y se recuperó `4-1e60a8ef91b1`.
+El build 1 también comprobó el bloqueo por calidad (Bandit), sin llegar al despliegue.
+No se afirma haber ejecutado adicionalmente la variante de fallo unitario intencional.
 
 ## 7. Validación local independiente de Jenkins
 
@@ -199,8 +213,9 @@ Versiones directas fijadas en requirements y backend de construcción. La etique
 `lts-jdk21`, paquetes apt y resolución transitiva de plugins son móviles: reproducción
 funcional prevista, no imagen binaria idéntica. Tras la primera instalación satisfactoria,
 guardar digest de la base, listado completo de plugins y dependencias de ese Linux;
-fijar digest y versiones resueltas si se exige reproducción exacta. No se atribuye éxito
-a una imagen o combinación de plugins que no se ha construido en este entorno.
+fijar digest y versiones resueltas si se exige reproducción exacta. La imagen de esta
+entrega sí fue construida y ejecutada; `evidence/image-inspect.json` conserva sus datos
+y `evidence/inventory.json` registra Python y versiones de plugins instalados.
 
 ```sh
 docker image inspect xyz-jenkins:caso3 > evidence/image-inspect.json
@@ -218,8 +233,10 @@ Jenkins.instance.pluginManager.plugins.sort { it.shortName }.each {
 
 Guardar el resultado sin datos secretos y las versiones de `reports/dependencies.txt`.
 La única supresión Bandit del servidor HTTP B104 se justifica por el enlace interno del
-contenedor con puerto publicado en loopback. B603 documenta comandos de subprocesos
-controlados sin shell; B310 se restringe a la URL HTTP interna fija. Bandit es análisis
+contenedor con puerto publicado en loopback. B404 y B603 documentan importación y uso
+de subprocesos controlados, en listas y sin shell; B310 corresponde a la URL HTTP interna
+fija. El primer build registró tres observaciones B404 de severidad baja; se revisaron
+y justificaron por línea antes de repetir. No se deshabilitó Bandit. Bandit es análisis
 estático, no certifica ausencia total de vulnerabilidades. No se usa este servidor HTTP
 didáctico como servidor de producción.
 
