@@ -18,5 +18,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if os.environ.get("RELEASE_ID"):
+        raise SystemExit("Fallo intencional: evidencia de rollback del laboratorio")
     # B104: enlace interno del contenedor, publicado solo en localhost por Compose.
     HTTPServer(("0.0.0.0", 8000), Handler).serve_forever()  # nosec B104
